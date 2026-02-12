@@ -11,6 +11,22 @@
                 #{createUser}, #{updateUser}, #{status})
     </insert>
 
+    <!-- 修改菜品表基本信息 -->
+    <update id="update">
+        update dish
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="image != null">image = #{image},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser}</if>
+        </set>
+        where id = #{id}
+    </update>
+
 
     <!-- 根据id批量删除菜品表中的菜品数据 -->
     <delete id="deleteByIds">
