@@ -15,12 +15,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/setmeal")
 @Slf4j
-public class SetmealDishController {
+public class SetmealController {
 
     private final SetmealService setmealService;
 
     @Autowired
-    public SetmealDishController(SetmealService setmealService) {
+    public SetmealController(SetmealService setmealService) {
         this.setmealService = setmealService;
     }
 
@@ -80,6 +80,19 @@ public class SetmealDishController {
     public Result update (@RequestBody SetmealDTO setmealDTO) {
         log.info("修改套餐: {}", setmealDTO);
         setmealService.update(setmealDTO);
+        return Result.success();
+    }
+
+    /**
+     * 起售停售套餐
+     * @param status
+     * @param id
+     * @return
+     */
+    @PostMapping("/status/{status}")
+    public Result startOrStop(@PathVariable Integer status, Long id) {
+        log.info("起售停售套餐, id: {}, status: {}", id, status);
+        setmealService.startOrStop(status, id);
         return Result.success();
     }
 }

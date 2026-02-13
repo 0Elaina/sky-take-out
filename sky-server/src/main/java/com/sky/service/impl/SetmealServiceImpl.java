@@ -10,11 +10,14 @@ import com.sky.entity.Dish;
 import com.sky.entity.Setmeal;
 import com.sky.entity.SetmealDish;
 import com.sky.exception.DeletionNotAllowedException;
+import com.sky.exception.SetmealEnableFailedException;
+import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealDishMapper;
 import com.sky.mapper.SetmealMapper;
 import com.sky.result.PageResult;
 import com.sky.service.SetmealService;
 import com.sky.vo.SetmealVO;
+import org.aspectj.bridge.Message;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,11 +30,15 @@ public class SetmealServiceImpl implements SetmealService {
 
     private final SetmealMapper setmealMapper;
     private final SetmealDishMapper setmealDishMapper;
+    private final DishMapper dishMapper;
 
     @Autowired
-    public SetmealServiceImpl(SetmealMapper setmealMapper, SetmealDishMapper setmealDishMapper) {
+    public SetmealServiceImpl(SetmealMapper setmealMapper,
+                              SetmealDishMapper setmealDishMapper,
+                              DishMapper dishMapper) {
         this.setmealMapper = setmealMapper;
         this.setmealDishMapper = setmealDishMapper;
+        this.dishMapper = dishMapper;
     }
 
 
@@ -139,5 +146,30 @@ public class SetmealServiceImpl implements SetmealService {
             });
             setmealDishMapper.insertBatch(setmealDishes);
         }
+    }
+
+    /**
+     * 起售停售套餐
+     * @param status
+     * @param id
+     */
+    @Override
+    public void startOrStop(Integer status, Long id) {
+        // 判断停售套餐是否有停售菜品，如果有拒绝起售
+        if(status == StatusConstant.ENABLE) {
+            List<Dish> dishList = dishMapper.getBySetmealId(id);
+            dishList.forEach(dish -> {
+                if(dish.getStatus() == StatusConstant.DISABLE) {
+                    throw new SetmealEnableFailedException(MessageConstant.SETMEAL_ENABLE_FAILED);
+                }
+            });
+        }
+
+        // 修改套餐状态
+        Setmeal setmeal = Setmeal.builder()
+                .id(id)
+                .status(status)
+                .build();
+        setmealMapper.update(setmeal);
     }
 }
