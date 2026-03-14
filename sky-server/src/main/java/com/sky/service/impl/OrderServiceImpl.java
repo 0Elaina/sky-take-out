@@ -77,6 +77,11 @@ public class OrderServiceImpl implements OrderService {
         if (shoppingCartList == null || shoppingCartList.isEmpty()) {
             throw new ShoppingCartBusinessException(MessageConstant.SHOPPING_CART_IS_NULL);
         }
+        User user = userMapper.getById(userId);
+        String wholeAddress = addressBook.getProvinceName() +
+                addressBook.getCityName() +
+                addressBook.getDistrictName() +
+                addressBook.getDetail();
 
         // 1. 向订单表插入 1 条数据
         Orders orders = Orders.builder()
@@ -87,6 +92,8 @@ public class OrderServiceImpl implements OrderService {
                 .phone(addressBook.getPhone())
                 .consignee(addressBook.getConsignee())
                 .userId(userId)
+                .address(wholeAddress)
+                .userName(user.getName())
                 .build();
         BeanUtils.copyProperties(ordersSubmitDTO, orders);
         orderMapper.insert(orders);
@@ -200,5 +207,25 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         return new PageResult(pageInfo.getTotal(), list);
+    }
+
+    /**
+     * 订单详情
+     * @param id
+     * @return
+     */
+    @Override
+    public OrderVO details(Long id) {
+        // 1. 根据 id 查询订单
+        Orders orders = orderMapper.getById(id);
+
+        // 2. 查询该订单对应的商品明细
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(id);
+
+        // 3. 返回 orderVO
+        OrderVO orderVO = new OrderVO();
+        orderVO.setOrderDetailList(orderDetailList);
+        BeanUtils.copyProperties(orders, orderVO);
+        return orderVO;
     }
 }
