@@ -52,4 +52,10 @@ public interface ShoppingCartMapper {
      */
     @Delete("delete from shopping_cart where user_id = #{userId} and setmeal_id = #{setmealId}")
     void deleteByUserIdWithSetmealId(Long userId, Long setmealId);
+
+    /**
+     * 批量插入购物车
+     * @param shoppingCartList
+     */
+    void insertBatch(List<ShoppingCart> shoppingCartList);
 }
