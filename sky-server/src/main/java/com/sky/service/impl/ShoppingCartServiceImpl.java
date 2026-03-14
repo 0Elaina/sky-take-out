@@ -38,11 +38,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     @Override
     public void addShoppingCart(ShoppingCartDTO shoppingCartDTO) {
         // 判断当前加入到购物车中的商品是否已经存在了
-        ShoppingCart shoppingCart = new ShoppingCart();
-        BeanUtils.copyProperties(shoppingCartDTO, shoppingCart);
-        Long userId = BaseContext.getCurrentId();
-        shoppingCart.setUserId(userId);
-
+        ShoppingCart shoppingCart = buildShoppingCart(shoppingCartDTO);
         List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
 
         // 如果已经存在了，只需要将数量加一
@@ -101,11 +97,34 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
      */
     @Override
     public void delete(ShoppingCartDTO shoppingCartDTO) {
-        Long userId = BaseContext.getCurrentId();
-        if (shoppingCartDTO.getDishId() != null) {
-            shoppingCartMapper.deleteByUserIdWithDishId(userId, shoppingCartDTO.getDishId());
+        // 商品的个数不为 1
+        ShoppingCart shoppingCart = buildShoppingCart(shoppingCartDTO);
+        List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
+        ShoppingCart cart = list.get(0);
+        if (cart.getNumber() > 1) {
+            cart.setNumber(cart.getNumber() - 1);
+            shoppingCartMapper.updateNumberById(cart);
         } else {
-            shoppingCartMapper.deleteByUserIdWithSetmealId(userId, shoppingCartDTO.getSetmealId());
+            Long userId = cart.getUserId();
+            if (shoppingCartDTO.getDishId() != null) {
+                shoppingCartMapper.deleteByUserIdWithDishId(userId, cart.getDishId());
+            } else {
+                shoppingCartMapper.deleteByUserIdWithSetmealId(userId, cart.getSetmealId());
+            }
         }
+    }
+
+    /**
+     * 构建购物车对象
+     * @param shoppingCartDTO
+     * @return
+     */
+    private ShoppingCart buildShoppingCart(ShoppingCartDTO shoppingCartDTO) {
+        ShoppingCart shoppingCart = new ShoppingCart();
+        BeanUtils.copyProperties(shoppingCartDTO, shoppingCart);
+        Long userId = BaseContext.getCurrentId();
+        shoppingCart.setUserId(userId);
+
+        return shoppingCart;
     }
 }
