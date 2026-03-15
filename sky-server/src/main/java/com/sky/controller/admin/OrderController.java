@@ -4,6 +4,7 @@ import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.OrderService;
+import com.sky.vo.OrderStatisticsVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,5 +33,11 @@ public class OrderController {
     public Result<PageResult> conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
         log.info("分页搜索订单: {}", ordersPageQueryDTO);
         return Result.success(orderService.conditionSearch(ordersPageQueryDTO));
+    }
+
+    @GetMapping("/statistics")
+    public Result<OrderStatisticsVO> statistics() {
+        log.info("订单统计");
+        return Result.success(orderService.statistics());
     }
 }
