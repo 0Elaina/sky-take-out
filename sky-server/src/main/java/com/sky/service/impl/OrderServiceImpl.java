@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -18,6 +19,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +29,12 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.PutMapping;
 
 import java.math.BigDecimal;
+import java.net.http.WebSocket;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final ShoppingCartMapper shoppingCartMapper;
     private final WeChatPayUtil weChatPayUtil;
     private final UserMapper userMapper;
+    private final WebSocketServer webSocketServer;
 
     @Autowired
     public OrderServiceImpl(OrderMapper orderMapper,
@@ -49,13 +55,15 @@ public class OrderServiceImpl implements OrderService {
                             AddressBookMapper addressBookMapper,
                             ShoppingCartMapper shoppingCartMapper,
                             WeChatPayUtil weChatPayUtil,
-                            UserMapper userMapper) {
+                            UserMapper userMapper,
+                            WebSocketServer webSocketServer) {
         this.orderMapper = orderMapper;
         this.orderDetailMapper = orderDetailMapper;
         this.addressBookMapper = addressBookMapper;
         this.shoppingCartMapper = shoppingCartMapper;
         this.weChatPayUtil = weChatPayUtil;
         this.userMapper = userMapper;
+        this.webSocketServer = webSocketServer;
     }
 
     /**
@@ -172,6 +180,15 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+
+        // 通过 WebSocket 向客户端推送消息 type orderId content
+        Map map = new HashMap();
+        map.put("type", 1); // 1 表示来单提醒 2 表示客户催单
+        map.put("orderId", ordersDB.getId());
+        map.put("content", "订单号: " + outTradeNo);
+
+        String json = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(json);
     }
 
     /**
