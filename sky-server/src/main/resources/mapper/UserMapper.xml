@@ -8,4 +8,18 @@
         insert into user (openid, name, phone, sex, id_number, avatar, create_time)
         values (#{openid}, #{name}, #{phone}, #{sex}, #{idNumber}, #{avatar}, #{createTime})
     </insert>
+
+    <!-- 统计用户数量 -->
+    <select id="getUserStatistics" resultType="java.util.Map">
+        select
+            DATE(create_time) as regDate,
+            COUNT(id) as dailyNew,
+            SUM(COUNT(id)) OVER (ORDER BY DATE(create_time)) as dailyTotal
+        from user
+        where
+            <if test="lastEndTime != null">
+                create_time &lt;= #{lastEndTime}
+            </if>
+        group by DATE(create_time)
+    </select>
 </mapper>
