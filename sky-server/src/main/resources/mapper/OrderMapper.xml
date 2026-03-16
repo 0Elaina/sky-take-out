@@ -99,4 +99,22 @@
         </where>
         group by DATE(order_time)
     </select>
+
+    <!-- 查询销量排名top10 -->
+    <select id="getSalesTop10" resultType="com.sky.dto.GoodsSalesDTO">
+        select
+        od.name,
+        sum(od.number) as number
+        from order_detail od, orders o
+        <where>
+            od.order_id = o.id
+            and o.status = 5
+            <if test="beginTime != null and endTime != null">
+                and o.order_time between #{beginTime} and #{endTime}
+            </if>
+        </where>
+        group by od.name
+        order by number desc
+        limit 0, 10
+    </select>
 </mapper>
