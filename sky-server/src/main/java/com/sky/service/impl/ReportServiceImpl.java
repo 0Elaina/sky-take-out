@@ -4,6 +4,7 @@ import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
+import com.sky.vo.OrderReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import org.apache.commons.lang3.StringUtils;
@@ -123,6 +124,67 @@ public class ReportServiceImpl implements ReportService {
                 .dateList(StringUtils.join(dateList, ","))
                 .newUserList(StringUtils.join(newUserList, ","))
                 .totalUserList(StringUtils.join(totalUserList, ","))
+                .build();
+    }
+
+    /**
+     * 统计指定时间区间内的订单数据
+     * @param begin
+     * @param end
+     * @return
+     */
+    @Override
+    public OrderReportVO getOrdersStatistics(LocalDate begin, LocalDate end) {
+        List<LocalDate> dateList = getBetweenDates(begin, end);
+
+        // 1. 一次性从数据库中获取统计数据
+        LocalDateTime beginTime = LocalDateTime.of(begin, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(end, LocalTime.MAX);
+        List<Map<String, Object>> mapList = orderMapper.getOrdersStatistics(beginTime, endTime, Orders.COMPLETED);
+
+        // 2. 将数据库 List 转为 Map, 方便按日期快速查找
+        Map<String, Map<String, Object>> statsMap = mapList.stream()
+                .collect(Collectors.toMap(
+                        m -> m.get("reportDate").toString(),
+                        m -> m
+                ));
+
+        // 3. 定义存储结果的集合
+        List<Integer> orderCountList = new ArrayList<>();
+        List<Integer> validOrderCountList = new ArrayList<>();
+
+        // 4. 遍历 dateList, 保证数据顺序并处理 "某天无订单" 的情况
+        for (LocalDate date : dateList) {
+            Map<String, Object> dayData = statsMap.get(date.toString());
+
+            // 推荐使用 Number 转换，比 Integer.parseInt(toString()) 更高效且安全
+            int total = (dayData != null && dayData.get("orderCount") != null)
+                    ? ((Number) dayData.get("orderCount")).intValue() : 0;
+            int valid = (dayData != null && dayData.get("validOrderCount") != null)
+                    ? ((Number) dayData.get("validOrderCount")).intValue() : 0;
+
+            orderCountList.add(total);
+            validOrderCountList.add(valid);
+        }
+
+        // 5. 计算时间区间内的汇总值
+        int totalOrderCount = orderCountList.stream().mapToInt(Integer::intValue).sum();
+        int validOrderCount = validOrderCountList.stream().mapToInt(Integer::intValue).sum();
+
+        // 6. 计算订单完成率
+        Double orderCompletionRate = 0.0;
+        if (totalOrderCount != 0) {
+            orderCompletionRate = (double) validOrderCount / totalOrderCount;
+        }
+
+        // 7. 封装 VO 返回
+        return OrderReportVO.builder()
+                .dateList(StringUtils.join(dateList, ","))
+                .orderCountList(StringUtils.join(orderCountList, ","))
+                .validOrderCountList(StringUtils.join(validOrderCountList, ","))
+                .totalOrderCount(totalOrderCount)
+                .validOrderCount(validOrderCount)
+                .orderCompletionRate(orderCompletionRate)
                 .build();
     }
 

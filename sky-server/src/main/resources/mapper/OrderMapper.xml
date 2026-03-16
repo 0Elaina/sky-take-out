@@ -84,4 +84,19 @@
         </if>
         group by DATE(order_time)
     </select>
+
+    <!-- 统计订单数据 -->
+    <select id="getOrdersStatistics" resultType="java.util.Map">
+        select
+            DATE(order_time) as reportDate,
+            count(id) as totalCount,
+            count(case when status = #{status} then id else null end) as validCount
+        from orders
+        <where>
+            <if test="beginTime != null and endTime != null">
+                order_time between #{beginTime} and #{endTime}
+            </if>
+        </where>
+        group by DATE(order_time)
+    </select>
 </mapper>

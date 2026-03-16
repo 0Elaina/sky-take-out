@@ -3,6 +3,7 @@ package com.sky.mapper;
 import com.github.pagehelper.Page;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
+import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
@@ -69,5 +70,16 @@ public interface OrderMapper {
      * @param map
      * @return
      */
+    @MapKey("name")
     List<Map<String, Object>> sumGroupByDay(Map<String, Object> map);
+
+    /**
+     * 根据动态条件统计订单数据
+     * @param beginTime
+     * @param endTime
+     * @param status
+     * @return
+     */
+    @MapKey("name")
+    List<Map<String, Object>> getOrdersStatistics(LocalDateTime beginTime, LocalDateTime endTime, Integer status);
 }
