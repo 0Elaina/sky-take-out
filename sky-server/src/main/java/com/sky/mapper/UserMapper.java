@@ -1,6 +1,7 @@
 package com.sky.mapper;
 
 import com.sky.entity.User;
+import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -38,5 +39,14 @@ public interface UserMapper {
      * @param lastEndTime
      * @return
      */
-    List<Map<String, Object>> getUserStatistics(LocalDateTime lastEndTime);
+    @MapKey("name")
+    List<Map<String, Object>> getDailyNewUser(LocalDateTime beginTime, LocalDateTime lastEndTime);
+
+    /**
+     * 查询指定时间的用户总数
+     * @param beginTime
+     * @return
+     */
+    @Select("select count(id) from user where create_time < #{beginTime}")
+    Integer countBefore(LocalDateTime beginTime);
 }

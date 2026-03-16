@@ -87,40 +87,36 @@ public class ReportServiceImpl implements ReportService {
         // 1. 创建集合用于存放 begin 到 end 范围内每天的日期
         List<LocalDate> dateList = getBetweenDates(begin, end);
 
+
         // 2. 创建集合存放每天新增的用户量
         List<Integer> newUserList = new ArrayList<>();
         // 3. 创建集合存放每天累计的用户量
         List<Integer> totalUserList = new ArrayList<>();
 
-        // 4. 获取截止日期
+        // 4. 获取日期
+        LocalDateTime beginTime = LocalDateTime.of(begin, LocalTime.MIN);
         LocalDateTime lastEndTime = LocalDateTime.of(end, LocalTime.MAX);
 
-        // 5. 获取截止到当前时间的所有历史数据 (按天分组)
-        // 返回 List<Map>, 包含 regDate, dailyNew, dailyTotal
-        List<Map<String, Object>> stats = userMapper.getUserStatistics(lastEndTime);
+        Integer totalBefore = userMapper.countBefore(beginTime);
 
-        // 6. 转为 Map 结构方便查询
-        Map<LocalDate, Integer> newMap = new HashMap<>();
-        Map<LocalDate, Integer> totalMap = new HashMap<>();
+        // 5. 获取区间内的“增量”
+        // 返回 List<Map>, 包含 regDate, dailyNew
+        List<Map<String, Object>> stats = userMapper.getDailyNewUser(beginTime, lastEndTime);
 
-        // 7. 填充 map
-        for (Map<String, Object> row: stats) {
-            LocalDate date = LocalDate.parse(row.get("regDate").toString());
-            newMap.put(date, Integer.parseInt(row.get("dailyNew").toString()));
-            totalMap.put(date, Integer.parseInt(row.get("dailyTotal").toString()));
-        }
+        // 6. 将增量数据转为 Map 结构 (Key: 日期, Value: 新增数)
+        Map<LocalDate, Integer> newMap = stats.stream().collect(Collectors.toMap(
+                m -> LocalDate.parse(m.get("regDate").toString()),
+                m -> ((Number) m.get("dailyNew")).intValue()
+        ));
 
-        // 8. 处理 "空天数" 和 "初始总量"
-        Integer lastTotal = 0;
-        for(LocalDate date: dateList) {
-            // 新增用户: 没查到就是 0
-            newUserList.add(newMap.getOrDefault(date, 0));
+        // 7. 处理 "空天数" 和 "初始总量"
+        int runningTotal = (totalBefore != null) ? totalBefore : 0;
+        for (LocalDate date : dateList) {
+            int todayNew = newMap.getOrDefault(date, 0);
+            runningTotal += todayNew; // 关键：昨天的总数 + 今天新增 = 今天的总数
 
-            // 总用户: 如果当天没新增, 总数等于前一天的总数
-            if (totalMap.containsKey(date)) {
-                lastTotal = totalMap.get(date);
-            }
-            totalUserList.add(lastTotal);
+            newUserList.add(todayNew);
+            totalUserList.add(runningTotal);
         }
         return UserReportVO
                 .builder()
