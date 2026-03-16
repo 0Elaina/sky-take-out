@@ -70,4 +70,18 @@
         </where>
         order by order_time desc
     </select>
+
+    <!-- 根据动态条件统计营业额数据 -->
+    <select id="sumGroupByDay" resultType="java.util.Map">
+        select DATE(order_time) as orderDate, sum(amount) as dayTurnover
+        from orders
+        where
+        <if test="begin != null and end != null">
+            order_time between #{begin} and #{end}
+        </if>
+        <if test="status != null">
+            and status = #{status}
+        </if>
+        group by DATE(order_time)
+    </select>
 </mapper>
